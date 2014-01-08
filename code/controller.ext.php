@@ -19,11 +19,11 @@ class module_controller
      * @param int $x_zvps_htpasswd_file_id
      * @return array
      */
-    static function fetchFile( $x_zvps_htpasswd_file_id )
+    static function fetchFile( $x_zvps_htpasswd_zpanel_user_id, $x_zvps_htpasswd_file_id )
     {
         global $zdbh;
-        $sqlString = "SELECT * FROM x_zvps_htpasswd_file WHERE x_zvps_htpasswd_file_id = :x_zvps_htpasswd_file_id";
-        $bindArray = array( ':x_zvps_htpasswd_file_id' => $x_zvps_htpasswd_file_id );
+        $sqlString = "SELECT * FROM x_zvps_htpasswd_file WHERE x_zvps_htpasswd_zpanel_user_id = :x_zvps_htpasswd_zpanel_user_id AND x_zvps_htpasswd_file_id = :x_zvps_htpasswd_file_id";
+        $bindArray = array( ':x_zvps_htpasswd_file_id' => $x_zvps_htpasswd_file_id, ':x_zvps_htpasswd_zpanel_user_id' => $x_zvps_htpasswd_zpanel_user_id );
         $zdbh->bindQuery( $sqlString, $bindArray );
         return $zdbh->returnRow();
     }
@@ -314,11 +314,16 @@ class module_controller
     
     
     #########################################################
-    # Controller Output methods
+    # Service Output methods
     #########################################################
     static function getFileList()
     {
         return self::fetchFileList( self::getCurrentUserId() );
+    }
+    
+    static function getFile()
+    {
+        return array(self::fetchFile( self::getCurrentUserId() , (int) self::getId() ));
     }
 
     #########################################################
@@ -331,6 +336,95 @@ class module_controller
     #########################################################
     
     
+    #########################################################
+    # Controller Actions
+    #########################################################
+    
+    static function getisEditProtection()
+    {
+        global $controller;
+        $urlvars = $controller->GetAllControllerRequests('URL');
+        if ((isset($urlvars['control'])) && ($urlvars['control'] === "EditProtection")) {
+            return true;
+        }
+        return false;
+    }
+
+    static function getisCreateProtection()
+    {
+        global $controller;
+        $urlvars = $controller->GetAllControllerRequests('URL');
+        if ((isset($urlvars['control'])) && ($urlvars['control'] === "CreateProtection")) {
+            return true;
+        }
+        return false;
+    }
+    
+    static function getisDeleteProtection()
+    {
+        global $controller;
+        $urlvars = $controller->GetAllControllerRequests('URL');
+        if ((isset($urlvars['control'])) && ($urlvars['control'] === "DeleteProtection")) {
+            return true;
+        }
+        return false;
+    }
+
+    static function getisEditUser()
+    {
+        global $controller;
+        $urlvars = $controller->GetAllControllerRequests('URL');
+        if ((isset($urlvars['control'])) && ($urlvars['control'] === "EditUser")) {
+            return true;
+        }
+        return false;
+    }
+
+    static function getisCreateUser()
+    {
+        global $controller;
+        $urlvars = $controller->GetAllControllerRequests('URL');
+        if ((isset($urlvars['control'])) && ($urlvars['control'] === "CreateUser")) {
+            return true;
+        }
+        return false;
+    }
+    
+    static function getisDeleteUser()
+    {
+        global $controller;
+        $urlvars = $controller->GetAllControllerRequests('URL');
+        if ((isset($urlvars['control'])) && ($urlvars['control'] === "DeleteUser")) {
+            return true;
+        }
+        return false;
+    }
+    
+    static function getisIndex()
+    {
+        global $controller;
+        $urlvars = $controller->GetAllControllerRequests('URL');
+        if ( 
+            (!isset($urlvars['control'])) || 
+            ( (isset($urlvars['control'])) && ($urlvars['control'] === "Index")) 
+        ) {
+            return true;
+        }
+        return false;
+    }
+    
+    static function getId() {
+        global $controller;
+        $urlvars = $controller->GetAllControllerRequests('URL');
+        if ( 
+            (isset($urlvars['control'])) && 
+            (isset($urlvars['id'])) 
+        ) {
+            return $urlvars['id'];
+        }
+        return false;
+    }
+
     #########################################################
     # General Utility Methods
     #########################################################
