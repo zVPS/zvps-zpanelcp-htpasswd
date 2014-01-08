@@ -1,0 +1,52 @@
+<?php
+
+require_once '/etc/zpanel/panel/cnf/db.php';
+require_once '/etc/zpanel/panel/dryden/db/driver.class.php';
+
+try {
+    $zdbh = new db_driver("mysql:host=$host;dbname=$dbname", $user, $pass);
+    $zdbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    die($e);
+}
+
+$sqlHtpasswdFile = "
+CREATE TABLE `x_zvps_htpasswd_file` (
+  `x_zvps_htpasswd_file_id` int(11) NOT NULL AUTO_INCREMENT,
+  `x_zvps_htpasswd_file_target` varchar(255) NOT NULL,
+  `x_zvps_htpasswd_file_message` varchar(255) NOT NULL,
+  `x_zvps_htpasswd_file_created` int(11) NOT NULL,
+  `x_zvps_htpasswd_file_deleted` int(11) DEFAULT NULL,
+  `x_zvps_htpasswd_zpanel_user_id` int(11) NOT NULL,
+  PRIMARY KEY (`x_zvps_htpasswd_file_id`),
+  UNIQUE KEY `x_zvps_htpasswd_file_target` (`x_zvps_htpasswd_file_target`),
+  KEY `x_zvps_htpasswd_file_x_zvps_htpasswd_zpanel_user_id_idx` (`x_zvps_htpasswd_zpanel_user_id`)
+)
+";
+$zdbh->bindQuery( $sqlHtpasswdFile, array( ) );
+
+$sqlHtpasswdMapper = "
+CREATE TABLE `x_zvps_htpasswd_mapper` (
+  `x_zvps_htpasswd_mapper_id` int(11) NOT NULL AUTO_INCREMENT,
+  `x_zvps_htpasswd_file_id` int(11) NOT NULL,
+  `x_zvps_htpasswd_user_id` int(11) NOT NULL,
+  PRIMARY KEY (`x_zvps_htpasswd_mapper_id`),
+  KEY `x_zvps_htpasswd_mapper_x_zvps_htpasswd_file_id_idx` (`x_zvps_htpasswd_file_id`),
+  KEY `x_zvps_htpasswd_mapper_x_zvps_htpasswd_user_id_idx` (`x_zvps_htpasswd_user_id`)
+)
+";
+$zdbh->bindQuery( $sqlHtpasswdMapper, array( ) );
+
+$sqlHtpasswdUser = "
+CREATE TABLE `x_zvps_htpasswd_user` (
+  `x_zvps_htpasswd_user_id` int(11) NOT NULL AUTO_INCREMENT,
+  `x_zvps_htpasswd_user_username` varchar(255) NOT NULL,
+  `x_zvps_htpasswd_user_password` varchar(255) NOT NULL,
+  `x_zvps_htpasswd_user_created` int(11) NOT NULL,
+  `x_zvps_htpasswd_user_deleted` int(11) DEFAULT NULL,
+  PRIMARY KEY (`x_zvps_htpasswd_user_id`),
+  UNIQUE KEY `x_zvps_htpasswd_user_username` (`x_zvps_htpasswd_user_username`),
+  UNIQUE KEY `x_zvps_htpasswd_user_password` (`x_zvps_htpasswd_user_password`)
+)
+";
+$zdbh->bindQuery( $sqlHtpasswdUser, array( ) );

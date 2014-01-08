@@ -1,0 +1,34 @@
+<div class="zmodule_header" id="zmodule_header_<@ ModuleName @>"><img src="<@ ModuleIcon @>" border="0"><@ ModuleName @></div>
+<div class="zmodule_content" id="zmodule_header_<@ ModuleName @>">
+
+    <div class="zmodule_desc" id="zmodule_desc_<@ ModuleName @>"><p><@ ModuleDesc @></p></div>
+	
+	<@ FlashMessage @>
+	<div style="width:700px; margin-left:auto; margin-right:auto;">
+		<a href="" class="fg-button ui-state-default ui-corner-all" style="color:#fff;">Create</a>
+	</div>
+	<div style="clear: both;"></div>
+	<table class="zgrid_wrapper" style="width:700px; margin-left:auto; margin-right:auto;">
+		<tr>
+			<td><strong>Target File</strong></td>
+			<td><strong>Display Message</strong></td>
+			<td><strong>Created</strong></td>
+			<td>&nbsp;</td>
+		</tr>
+		<% loop FileList %>
+		<tr>
+			<td><& x_zvps_htpasswd_file_target &></td>
+			<td><& x_zvps_htpasswd_file_message &></td>
+			<td><& x_zvps_htpasswd_file_created &></td>
+			<td>
+				<a href="<& x_zvps_htpasswd_file_id &>" class="fg-button ui-state-default ui-corner-all" style="color:#fff;">
+					Edit
+				</a>
+			</td>
+		</tr>
+		<% endloop %>
+
+	</table>
+
+
+

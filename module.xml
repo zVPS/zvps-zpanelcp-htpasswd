@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<module>
+	<name>zVPS Htpasswd</name>
+	<version>100</version>
+	<defaultcat>Advanced</defaultcat>
+	<desc>Password protect your applications and directories.</desc>
+	<authorname>nForced Website Hosting Limited</authorname>
+	<authoremail>support@zvps.co.uk</authoremail>
+	<authorurl>http://www.zvps.co.uk/</authorurl>
+	<updateurl>http://www.zvps.co.uk/uds/core.xml</updateurl>
+</module>
