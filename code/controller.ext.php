@@ -7,7 +7,7 @@
 class module_controller
 {
 
-    static $flash_messanger;
+    static $flash_messanger = array();
 
     #########################################################
     # Htpasswd DAO (Data Access Object)                     #
@@ -93,6 +93,9 @@ class module_controller
         $zdbh->bindQuery($sqlString, $bindArray);
         return $zdbh->returnRows();
     }
+    
+    static function fetchUserDomainList(){}
+    static function fetchUserSubDomainList(){}
 
     #########################################################
 
@@ -126,7 +129,15 @@ class module_controller
             ':x_zvps_htpasswd_file_created'   => $fileArray[ 'x_zvps_htpasswd_file_created' ],
             ':x_zvps_htpasswd_zpanel_user_id' => $fileArray[ 'x_zvps_htpasswd_zpanel_user_id' ],
         );
-        $zdbh->bindQuery( $sqlString, $bindArray );
+        try {
+            $zdbh->bindQuery( $sqlString, $bindArray );
+        }
+        catch (PDOException $exc) {
+            $message = ($exc->getCode() === '23000') ? 'Folder already protected.' : 'Error adding to database.';
+            self::setFlashMessage('error', $message);
+        }
+
+        
         return $zdbh->lastInsertId();
     }
 
@@ -306,8 +317,26 @@ class module_controller
     #########################################################
     # File System Operations
     #########################################################
-    
-    
+    static function fileInPathCheck($file)
+    {
+        $path = self::getHostDir() . self::getCurrentUsername() . '/public_html/' . $file . '/';
+        $realPath = realpath($path);
+        
+        if(!$realPath) {
+            self::setFlashMessage('error', 'Path \'' . $path . '\' not found.');
+            return false;
+        }
+        
+        if( 0 !== strpos($realPath, self::getHostDir() . self::getCurrentUsername() . '/')) {
+            self::setFlashMessage('error', 'Path \'' . $realPath . '\' is outside your home directory and is not allowed.');
+            return false;
+        }
+        
+        self::setFlashMessage('debug', 'fileInPathCheck successful');
+        return $realPath;
+    }
+
+
     #########################################################
     # Htpasswd Password Generation
     #########################################################
@@ -325,21 +354,69 @@ class module_controller
     {
         return array(self::fetchFile( self::getCurrentUserId() , (int) self::getId() ));
     }
-
-    #########################################################
-    # Post handeller methods
-    #########################################################
     
+    static function getHostDir()
+    {
+        return ctrl_options::GetSystemOption('hosted_dir');
+    }
     
     #########################################################
     # Input Checkers
     #########################################################
+    private static function getId()
+    {
+        global $controller;
+        $urlvars = $controller->GetAllControllerRequests('URL');
+        if ( 
+            (isset($urlvars['control'])) && 
+            (isset($urlvars['id'])) 
+        ) {
+            return (int) $urlvars['id'];
+        }
+        return false;
+    }
+    
+    #########################################################
+    # Post Actions
+    #########################################################
+    static function doCreateProtection()
+    {
+        global $controller;
+        runtime_csfr::Protect();
+        
+        $file = $controller->GetControllerRequest('FORM', 'file');
+        $message = $controller->GetControllerRequest('FORM', 'message');
+        
+        
+        // Check File path security check
+        if(!self::hasFlashErrors()) {
+            $fileTarget = self::fileInPathCheck($file);
+        }
+        
+        // Create DB record
+        if(!self::hasFlashErrors() && $fileTarget) {
+            self::createFile(
+                array(
+                    'x_zvps_htpasswd_file_target'    => $fileTarget,
+                    'x_zvps_htpasswd_file_message'   => $message,
+                    'x_zvps_htpasswd_file_created'   => time(),
+                    'x_zvps_htpasswd_zpanel_user_id' => self::getCurrentUserId(),
+                )
+            );
+        }
+        
+        // Create or append to .htaccess
+        
+        // No errors
+        
+        // Errors
+        
+    }
     
     
     #########################################################
     # Controller Actions
     #########################################################
-    
     static function getisEditProtection()
     {
         global $controller;
@@ -412,18 +489,6 @@ class module_controller
         }
         return false;
     }
-    
-    static function getId() {
-        global $controller;
-        $urlvars = $controller->GetAllControllerRequests('URL');
-        if ( 
-            (isset($urlvars['control'])) && 
-            (isset($urlvars['id'])) 
-        ) {
-            return $urlvars['id'];
-        }
-        return false;
-    }
 
     #########################################################
     # General Utility Methods
@@ -452,15 +517,39 @@ class module_controller
         return $module_icon;
     }
 
+    private static function getCurrentUserId()
+    {
+        $currentuser = ctrl_users::GetUserDetail();
+        return $currentuser[ 'userid' ];
+    }
+    
+    private static function getCurrentUsername()
+    {
+        $currentuser = ctrl_users::GetUserDetail();
+        return $currentuser[ 'username' ];
+    }
+
     static function getFlashMessage()
     {
         return self::$flash_messanger;
     }
-
-    static function getCurrentUserId()
+    
+    static function setFlashMessage($type,$message)
     {
-        $currentuser = ctrl_users::GetUserDetail();
-        return $currentuser[ 'userid' ];
+        self::$flash_messanger[] = array($type => $message);
+    }
+    
+    static function hasFlashErrors()
+    {
+        $messages = self::getFlashMessage();
+        
+        if(empty($messages)) { return false; }
+        
+        foreach( $messages as $message ) {
+            return array_key_exists('error', $message);
+        }
+        
+        return true;
     }
 
 }
