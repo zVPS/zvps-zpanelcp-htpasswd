@@ -3,12 +3,17 @@
 
     <div class="zmodule_desc" id="zmodule_desc_<@ ModuleName @>"><p><@ ModuleDesc @></p></div>
 
-    <@ FlashMessage @>
+    <% loop FlashMessage %>
+    <div class="alert alert-danger">
+        <& error &>
+        <& debug &>
+    </div>
+    <% endloop %>
     
     <% if isIndex %>
     
     <div class="pull-right">
-        <a href="<& x_zvps_htpasswd_file_id &>" class="button-loader btn btn-success btn-small">
+        <a href="/?module=zvps_zpanelx_htpasswd&control=CreateProtection" class="button-loader btn btn-success btn-small">
             Create
         </a>
     </div>
@@ -17,10 +22,10 @@
     
     <table class="table table-stripped table-bordered" style="width:700px; margin-left:auto; margin-right:auto;">
         <tr>
-            <td><strong>Protected Directory</strong></td>
-            <td><strong>Message</strong></td>
-            <td><strong>Created On</strong></td>
-            <td>&nbsp;</td>
+            <td style="text-align: center;"><strong>Protected Directory</strong></td>
+            <td style="text-align: center;"><strong>Message</strong></td>
+            <td style="text-align: center;"><strong>Created On</strong></td>
+            <td style="text-align: center;"><strong>Manage</strong></td>
         </tr>
         <% loop FileList %>
         <tr>
@@ -64,12 +69,44 @@
     <% endif %>
     
     <% if isCreateProtection %>
-        Create Protection page
+    <div><h3>Protect A Directory</h3></div>
+    <div class="clearfix"></div>
+    
+    <div class="pull-right">
+        <a href="/?module=zvps_zpanelx_htpasswd&control=Index" class="button-loader btn btn-small">Back</a>
+    </div>
+
+    <div class="clearfix"></div>
+    
+    <div>Protect a directory inside <@ HostDir @><# ui_tpl_username #>/public_html/<br><br><br></div>
+    <div class="clearfix"></div>
+    
+    
+    <form action="/?module=zvps_zpanelx_htpasswd&control=CreateProtection&action=CreateProtection" method="post" name="CreateProtection">
+        <label>File Path:</label>
+        <@ HostDir @><# ui_tpl_username #>/public_html/
+        <input type="text" name="file" class="input input-medium">
+        <label>Message:</label>
+        <input type="text" name="message" class="input input-medium">
+        <br><br>
+        <input type="submit" name="submitCreateProtection" value="Submit" class="btn btn-primary">
+        <@ CSFR_Tag @>
+    </form>
     <% endif %>
     
     <% if isDeleteProtection %>
         Delete Protection page
     <% endif %>
+    
+    <% if isEditUser %>
+        Edit User page
+    <% endif %>
+    
+    <% if isCreateUser %>
+        Create User page
+    <% endif %>
 
-
+    <% if isDeleteUser %>
+        Delete User page
+    <% endif %>
 
