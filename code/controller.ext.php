@@ -6,6 +6,22 @@
  */
 class module_controller
 {
+    
+    #########################################################
+    # Configurations                                        #
+    #########################################################
+    /**
+     * Live is false, Dev is true
+     * Dev mode enables debug messages in the view.
+     * @var boolean 
+     */
+    static $mode = true;
+    
+    
+    #########################################################
+    # Application Start                                     #
+    #########################################################
+    
 
     static $flash_messanger = array();
 
@@ -335,7 +351,20 @@ class module_controller
         self::setFlashMessage('debug', 'fileInPathCheck successful');
         return $realPath;
     }
-
+    
+    static function fileHtaccessExists($realPath)
+    {
+        if(!file_exists($realPath . '.htaccess')) {
+            self::setFlashMessage('debug', 'htaccess file does not exists');
+            return false;
+        }
+        self::setFlashMessage('debug', 'htaccess file exists');
+        return true;
+    }
+    
+    static function createHtaccessFile() {
+        
+    }
 
     #########################################################
     # Htpasswd Password Generation
@@ -394,7 +423,7 @@ class module_controller
         }
         
         // Create DB record
-        if(!self::hasFlashErrors() && $fileTarget) {
+        if(!self::hasFlashErrors()) {
             self::createFile(
                 array(
                     'x_zvps_htpasswd_file_target'    => $fileTarget,
@@ -406,6 +435,10 @@ class module_controller
         }
         
         // Create or append to .htaccess
+        if(!self::hasFlashErrors())
+        {
+            
+        }
         
         // No errors
         
@@ -516,6 +549,11 @@ class module_controller
         $module_icon = "modules/" . $controller->GetControllerRequest( 'URL', 'module' ) . "/assets/icon.png";
         return $module_icon;
     }
+    
+    static function getModuleMode()
+    {
+        return self::$mode;
+    }
 
     private static function getCurrentUserId()
     {
@@ -528,10 +566,38 @@ class module_controller
         $currentuser = ctrl_users::GetUserDetail();
         return $currentuser[ 'username' ];
     }
+    
+    #########################
+    # Flash message methods #
+    #########################
 
-    static function getFlashMessage()
+    static function getFlashMessages()
     {
         return self::$flash_messanger;
+    }
+    
+    static function getFlashErrorMessages()
+    {
+        $messages = self::getFlashMessages();
+        $errorMessages = array();
+        foreach( $messages as $message ) {
+            if(array_key_exists('error', $message)) {
+                $errorMessages[] = $message;
+            }
+        }
+        return $errorMessages;
+    }
+    
+    static function getFlashDebugMessages()
+    {
+        $messages = self::getFlashMessages();
+        $debugMessages = array();
+        foreach( $messages as $message ) {
+            if(array_key_exists('debug', $message)) {
+                $debugMessages[] = $message;
+            }
+        }
+        return $debugMessages;
     }
     
     static function setFlashMessage($type,$message)
@@ -541,7 +607,7 @@ class module_controller
     
     static function hasFlashErrors()
     {
-        $messages = self::getFlashMessage();
+        $messages = self::getFlashMessages();
         
         if(empty($messages)) { return false; }
         
