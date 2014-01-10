@@ -430,12 +430,13 @@ class module_controller
     
     static function writeFile($fileCombinedPath, $string='', $append=false )
     {
-        $openType = (!$append) ? 'w' : 'a';
         
+        $openType = (!$append) ? 'w' : 'a';
+
         $fp = fopen($fileCombinedPath, $openType);
 
         if(false === $fp) {
-            self::setFlashMessage('debug', 'file pointer returned false on fopen');
+            self::setFlashMessage('debug', 'file pointer returned false on fopen ' . $fileCombinedPath . ' ' .$openType);
             return false;
         }
 
@@ -448,14 +449,40 @@ class module_controller
            self::setFlashMessage('debug', 'file pointer returned false on fclose');
             return false; 
         }
+        
+        unset($fp);
 
         self::setFlashMessage('debug', 'file created successfully');
         return true;
     }
     
-    static function createHtaccessFile($realPath) {
+    static function readFile ($fileCombinedPath) {
+        $fp = fopen($fileCombinedPath, 'r');
+
+        if(false === $fp) {
+            self::setFlashMessage('debug', 'file pointer returned false on fopen ' . $fileCombinedPath . ' ' .$openType);
+            return false;
+        }
+        $string = fread($fp, 10000000);
+        if(false === $string) {
+            self::setFlashMessage('debug', 'file pointer returned false on fwrite');
+            return false;
+        }
+
+        if (false === fclose($fp)) {
+           self::setFlashMessage('debug', 'file pointer returned false on fclose');
+            return false; 
+        }
         
-        if(!self::writeFile($realPath . '/.htaccess') )
+        unset($fp);
+
+        self::setFlashMessage('debug', 'file created successfully');
+        return $string;
+    }
+    
+    static function createHtaccessFile($realPath) {
+        $combinedPath = $realPath . '/.htaccess';
+        if(!self::writeFile($combinedPath) )
         {
             self::setFlashMessage('error', 'failed to create htaccess file.');
             return false;
@@ -479,7 +506,9 @@ class module_controller
             }
         }
         
-        if(!self::writeFile($path . 'htpasswd-' . md5($realPath)))
+        $combinedPath = $path . 'htpasswd-' . md5($realPath);
+        
+        if(!self::writeFile($combinedPath))
         {
             self::setFlashMessage('error', 'failed to create passwd file for protected directory.');
             return false;
@@ -491,12 +520,14 @@ class module_controller
     static function writeHtaccessLink($realPath, $append=false, $message)
     {
         $htpasswdFile = self::getHostDir() . self::getCurrentUsername() . '/htpasswd/' . 'htpasswd-' . md5($realPath);
-        $htaccessString = 'AuthName "' . $message . '" ' . PHP_EOL .
-                          'AuthType Basic ' . PHP_EOL .
+        $htaccessString = 'AuthName "' . $message . '"' . PHP_EOL .
+                          'AuthType Basic' . PHP_EOL .
                           'AuthUserFile ' . $htpasswdFile . PHP_EOL .
                           'Require valid-user' . PHP_EOL;
         
-        if(!self::writeFile($realPath . '/.htaccess', $htaccessString, $append ) )
+        $combinedPath = $realPath . '/.htaccess';
+        
+        if(!self::writeFile($combinedPath, $htaccessString, $append ) )
         {
             self::setFlashMessage('error', 'failed to write htaccess file data.');
             return false;
@@ -508,25 +539,26 @@ class module_controller
     
     static function removeHtaccessLink($realPath, $message)
     {
-        $data = file($realPath . '/.htaccess');
-        $dataString = implode('', $data);
-        $htpasswdFile = self::getHostDir() . 'htpasswd/' . 'htpasswd-' . md5($realPath);
+        $combinedPath = $realPath . '/.htaccess';
+        $data = self::readFile($combinedPath);
+
+        $htpasswdFile = self::getHostDir() . self::getCurrentUsername(). '/' . 'htpasswd/' . 'htpasswd-' . md5($realPath);
         
-        $htaccessString = 'AuthName "' . $message . '" ' . PHP_EOL .
-                          'AuthType Basic ' . PHP_EOL .
-                          'AuthUserFile ' . $htpasswdFile . PHP_EOL .
-                          'Require valid-user' . PHP_EOL;
-        
-        $newFileString = str_replace($htaccessString, '', $dataString);
-        
-        if(!self::writeFile($realPath . '/.htaccess', $newFileString))
+        $htaccessString = 'AuthName "' . $message . '"' . PHP_EOL . 
+            'AuthType Basic' . PHP_EOL . 
+            'AuthUserFile ' . $htpasswdFile . PHP_EOL . 
+            'Require valid-user' . PHP_EOL;
+                      
+        $newFileString = str_replace($htaccessString, '', $data);
+
+        if(!self::writeFile($combinedPath, $newFileString))
         {
             self::setFlashMessage('error', 'failed to remove htaccess link to htpasswd file.');
             return false;
         }
         
         self::setFlashMessage('debug', 'htaccess link to htpasswd removed successfully.');
-
+        return true;
     }
     
     static function removeHtpasswd($combinedPath)
@@ -674,6 +706,16 @@ class module_controller
         $id = self::getId();
         $file = self::fetchFile($id);
         
+        self::removeHtaccessLink($file['x_zvps_htpasswd_file_target'], $file['x_zvps_htpasswd_file_message']);
+
+        // Check .htaccess exists
+        if(!self::hasFlashErrors()) { $exists = self::fileHtaccessExists($file['x_zvps_htpasswd_file_target']); }
+        // Create .htaccess file if needed
+        if(!self::hasFlashErrors() && !$exists) { self::createHtaccessFile($file['x_zvps_htpasswd_file_target']); }
+        // Write htaccess configs to link to passwd file
+        $append = !$exists ? false : true;
+        if(!self::hasFlashErrors()) { self::writeHtaccessLink($file['x_zvps_htpasswd_file_target'], $append, $message); }
+        
         if(!self::hasFlashErrors())
         {
             self::updateFile(array(
@@ -703,13 +745,13 @@ class module_controller
         
         if($files && !self::hasFlashErrors()) {
             foreach ($files as $file) {
-                if($file['x_zvps_htpasswd_file_id']) { 
-                    self::deleteUser($file['x_zvps_htpasswd_file_id']);
-                    self::setFlashMessage('debug', 'deleting user');
-                }
                 if($file['x_zvps_htpasswd_file_id'] && $file['x_zvps_htpasswd_user_id']) {
                     self::deleteMapper($file['x_zvps_htpasswd_file_id'], $file['x_zvps_htpasswd_user_id']);
                     self::setFlashMessage('debug', 'deleting file user mapper');
+                }
+                if($file['x_zvps_htpasswd_file_id']) { 
+                    self::deleteUser($file['x_zvps_htpasswd_user_id']);
+                    self::setFlashMessage('debug', 'deleting user');
                 }
             }
         }

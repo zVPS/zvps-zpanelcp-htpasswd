@@ -1,4 +1,4 @@
-<div class="zmodule_header" id="zmodule_header_<@ ModuleName @>"><img src="<@ ModuleIcon @>" border="0"><@ ModuleName @></div>
+<div class="zmodule_title" id="zmodule_title_<@ ModuleName @>"><img src="<@ ModuleIcon @>" border="0"><@ ModuleName @></div>
 <div class="zmodule_content" id="zmodule_header_<@ ModuleName @>">
 
     <div class="zmodule_desc" id="zmodule_desc_<@ ModuleName @>"><p><@ ModuleDesc @></p></div>
@@ -17,9 +17,9 @@
         </a>
     </div>
     
-    <div class="clearfix"></div>
+    <div class="clearfix">&nbsp;</div>
     
-    <table class="table table-stripped table-bordered" style="width:100%; margin-left:auto; margin-right:auto;">
+    <table class="table table-stripped table-bordered" style="margin-top: 20px; width:100%; margin-left:auto; margin-right:auto;">
         <tr>
             <td style="text-align: center;"><strong>Protected Directory</strong></td>
             <td style="text-align: center;"><strong>Message</strong></td>
@@ -48,7 +48,7 @@
     
     <% if isEditProtection %>
     <div class="pull-right">
-        <a href="/?module=zvps_zpanelx_htpasswd&control=Index" class="button-loader btn btn-small">Back</a>
+        <a href="/?module=zvps_zpanelx_htpasswd&control=Index" class="button-loader btn btn-default">Back</a>
     </div>
 
     <div class="clearfix"></div>
@@ -82,7 +82,7 @@
     
     <div class="clearfix"></div>
     
-    <table class="table table-stripped table-bordered" style="width:100%; margin-left:auto; margin-right:auto;">
+    <table class="table table-stripped table-bordered" style="margin-top: 20px; width:100%; margin-left:auto; margin-right:auto;">
         <tr>
             <td style="text-align: center;"><strong>Username</strong></td>
             <td style="text-align: center;"><strong>Created On</strong></td>
@@ -109,7 +109,7 @@
     <div class="clearfix"></div>
     
     <div class="pull-right">
-        <a href="/?module=zvps_zpanelx_htpasswd&control=Index" class="button-loader btn btn-small">Back</a>
+        <a href="/?module=zvps_zpanelx_htpasswd&control=Index" class="button-loader btn btn-default">Back</a>
     </div>
 
     <div class="clearfix"></div>
@@ -139,6 +139,12 @@
     <% endif %>
 
     <% if isCreateUser %>
+    <div class="pull-right">
+        <a href="/?module=zvps_zpanelx_htpasswd&control=EditProtection&id=<@ Id @>" class="button-loader btn btn-default">Back</a>
+    </div>
+    
+    <div class="clearfix"></div>
+    
     <form action="/?module=zvps_zpanelx_htpasswd&control=CreateUser&action=CreateUser&id=<@ Id @>" method="post" name="CreateProtection">
         <label>Username:</label>
         <input type="text" name="username" class="input input-medium">
