@@ -99,7 +99,7 @@ class module_controller
      * @global db_driver $zdbh
      * @return array
      */
-    static function fetchUserList($x_zvps_htpasswd_file_id)
+    static function fetchUserList()
     {
         global $zdbh;
         $sqlString = "SELECT * FROM zpanel_core.x_zvps_htpasswd_file 
@@ -134,7 +134,7 @@ class module_controller
             AND f.x_zvps_htpasswd_zpanel_user_id = :x_zvps_htpasswd_zpanel_user_id
         ";
         $bindArray = array(
-            ':x_zvps_htpasswd_file_id' => $x_zvps_htpasswd_file_id,
+            ':x_zvps_htpasswd_file_id' => self::getId(),
             ':x_zvps_htpasswd_zpanel_user_id' => self::getCurrentUserId(),
         );
         $zdbh->bindQuery($sqlString, $bindArray);
@@ -533,11 +533,11 @@ class module_controller
     {
         if(!unlink($combinedPath))
         {
-            self::setFlashMessage('debug', 'htpasswd file removal failed.');
+            self::setFlashMessage('debug', 'htpasswd file removal failed : ' . $combinedPath);
             return false;
         }
         
-        self::setFlashMessage('debug', 'htpasswd file removal succeeded.');
+        self::setFlashMessage('debug', 'htpasswd file removal succeeded : ' . $combinedPath);
         return true;
         
     }
@@ -591,7 +591,7 @@ class module_controller
     
     static function getUserFileList()
     {
-        return self::fetchUserList();
+        return self::fetchFileUserList();
     }
     
     #########################################################
@@ -691,7 +691,7 @@ class module_controller
         $id = self::getId();
         $file = self::fetchFile($id);
         $htpasswdFile = self::getHostDir() . self::getCurrentUsername() . '/htpasswd/' . 'htpasswd-' . md5($file['x_zvps_htpasswd_file_target']);
-        
+
         // delete from htaccess file
         self::removeHtaccessLink($file['x_zvps_htpasswd_file_target'],$file['x_zvps_htpasswd_file_message']);
         
@@ -712,12 +712,12 @@ class module_controller
                     self::setFlashMessage('debug', 'deleting file user mapper');
                 }
             }
-
-            // delete protected from db
-            self::deleteFile($id);
-            self::setFlashMessage('debug', 'deleting file');
         }
         
+        // delete protected from db
+        self::deleteFile($id);
+        self::setFlashMessage('debug', 'deleting file');
+
         // return to list
         if(!self::hasFlashErrors()) 
         {
