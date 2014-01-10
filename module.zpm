@@ -9,7 +9,7 @@
     
     <% loop FlashErrorMessages %><div class="alert alert-danger"><& error &></div><% endloop %>
     
-        
+    
     <% if isIndex %>
     <div class="pull-right">
         <a href="/?module=zvps_zpanelx_htpasswd&control=CreateProtection" class="button-loader btn btn-success btn-small">
@@ -133,7 +133,7 @@
     <% if isDeleteProtection %>
     <div>Please confirm the delete request:</div>
     <form action="/?module=zvps_zpanelx_htpasswd&control=DeleteProtection&action=DeleteProtection&id=<@ Id @>" method="post" name="DeleteProtection">
-        <input type="submit" name="submitCreateProtection" value="Submit" class="btn btn-primary">
+        <input type="submit" name="submitDeleteProtection" value="Submit" class="btn btn-primary">
         <@ CSFR_Tag @>
     </form>
     <% endif %>
@@ -157,6 +157,9 @@
     <% endif %>
 
     <% if isDeleteUser %>
-        Delete User page
+        <div>Please confirm the user delete request:</div>
+        <form action="/?module=zvps_zpanelx_htpasswd&control=DeleteUser&action=DeleteUser&id=<@ Id @>" method="post" name="DeleteUser">
+            <input type="submit" name="submitDeleteUser" value="Submit" class="btn btn-primary">
+            <@ CSFR_Tag @>
+        </form>
     <% endif %>
-
