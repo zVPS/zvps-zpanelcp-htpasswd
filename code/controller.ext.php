@@ -111,7 +111,7 @@ class module_controller
                      AND (x_zvps_htpasswd_user.x_zvps_htpasswd_zpanel_user_id = :x_zvps_htpasswd_zpanel_user_id
                           OR x_zvps_htpasswd_user.x_zvps_htpasswd_zpanel_user_id IS NULL);";
         $bindArray = array( 
-            ':x_zvps_htpasswd_file_id' => $x_zvps_htpasswd_file_id, 
+            ':x_zvps_htpasswd_file_id' => self::getId(), 
             ':x_zvps_htpasswd_zpanel_user_id' => self::getCurrentUserId(),     
         );
         $zdbh->bindQuery( $sqlString, $bindArray );
@@ -140,9 +140,6 @@ class module_controller
         $zdbh->bindQuery($sqlString, $bindArray);
         return $zdbh->returnRows();
     }
-    
-    static function fetchUserDomainList(){}
-    static function fetchUserSubDomainList(){}
 
     #########################################################
 
@@ -216,7 +213,7 @@ class module_controller
         $bindArray = array(
             ':x_zvps_htpasswd_user_username' => $userArray[ 'x_zvps_htpasswd_user_username' ],
             ':x_zvps_htpasswd_user_password' => $userArray[ 'x_zvps_htpasswd_user_password' ],
-            ':x_zvps_htpasswd_user_created'  => $userArray[ 'x_zvps_htpasswd_user_created' ],
+            ':x_zvps_htpasswd_user_created'  => time(),
             ':x_zvps_htpasswd_zpanel_user_id'  => self::getCurrentUserId(),
         );
         $zdbh->bindQuery( $sqlString, $bindArray );
@@ -545,8 +542,28 @@ class module_controller
         
     }
     
-    static function writePasswdUsers() {
+    static function writePasswdUsers($file) {
+        $files = self::fetchFileUserList($file['x_zvps_htpasswd_file_id']);
+        $userString = "";
+        foreach($files as $file) {
+            $userString .= 
+                $file['x_zvps_htpasswd_user_username'] . 
+                ':' . 
+                $file['x_zvps_htpasswd_user_password'] . PHP_EOL
+            ; 
+        }
         
+        self::writeFile(
+            self::getHostDir() . 
+            '/' . 
+            self::getCurrentUsername() . 
+            '/htpasswd/'.
+            'htpasswd-' . md5($file['x_zvps_htpasswd_file_target'])
+            , 
+            $userString
+            , 
+            false
+        );
     }
 
     #########################################################
@@ -570,6 +587,11 @@ class module_controller
     static function getHostDir()
     {
         return ctrl_options::GetSystemOption('hosted_dir');
+    }
+    
+    static function getUserFileList()
+    {
+        return self::fetchUserList();
     }
     
     #########################################################
@@ -703,6 +725,37 @@ class module_controller
         }
     }
     
+    static function doCreateUser()
+    {
+        global $controller;
+        runtime_csfr::Protect();
+        $id = self::getId();
+        $file = self::fetchFile($id);
+        $htpasswdFile = self::getHostDir() . self::getCurrentUsername() . '/htpasswd/' . 'htpasswd-' . md5($file['x_zvps_htpasswd_file_target']);
+        
+        $username = $controller->GetControllerRequest('FORM', 'username');
+        $password = $controller->GetControllerRequest('FORM', 'password');
+        
+        $encryptedPassword = crypt($password, base64_encode($password));
+        
+        $userId = self::createUser(array(
+            'x_zvps_htpasswd_user_username'  => $username,
+            'x_zvps_htpasswd_user_password'  => $encryptedPassword,
+        ));
+        
+        self::createMapper($id, $userId);
+        
+        self::writePasswdUsers($file);
+        
+        header("location: ./?module=" . $controller->GetCurrentModule() . "&control=EditProtection&id=" . $id);
+        
+    }
+    
+    static function doDeleteUser()
+    {
+        
+    }
+
     
     #########################################################
     # Controller Actions

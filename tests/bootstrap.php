@@ -7,4 +7,3 @@ require_once __DIR__ . '/../../../dryden/db/driver.class.php';
 require_once '/../../../cnf/db.php';
 debug_phperrors::SetMode( 'dev' );
 require_once '/../../../inc/dbc.inc.php';
-?>

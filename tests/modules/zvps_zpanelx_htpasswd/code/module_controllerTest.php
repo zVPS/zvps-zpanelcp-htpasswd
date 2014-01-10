@@ -50,7 +50,7 @@ class module_controllerTest extends PHPUnit_Framework_TestCase
      */
     public function testFetchFileList()
     {
-        $return = module_controller::fetchFileList( '1' );
+        $return = module_controller::fetchFileList();
         $this->assertNotEmpty( $return );
         $this->assertTrue( is_array( $return ) );
 

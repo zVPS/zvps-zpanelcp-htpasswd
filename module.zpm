@@ -73,6 +73,35 @@
             <% endloop %>
         </table>
     </form>
+    
+    <div class="pull-right">
+        <a href="/?module=zvps_zpanelx_htpasswd&control=CreateUser&id=<@ Id @>" class="button-loader btn btn-success btn-small">
+            Create
+        </a>
+    </div>
+    
+    <div class="clearfix"></div>
+    
+    <table class="table table-stripped table-bordered" style="width:100%; margin-left:auto; margin-right:auto;">
+        <tr>
+            <td style="text-align: center;"><strong>Username</strong></td>
+            <td style="text-align: center;"><strong>Created On</strong></td>
+            <td style="text-align: center;"><strong>Manage</strong></td>
+        </tr>
+        <% loop UserFileList %>
+        <tr>
+            
+            <td><& x_zvps_htpasswd_user_username &></td>
+            <td><& x_zvps_htpasswd_user_created &></td>
+            <td>
+                <a href="/?module=zvps_zpanelx_htpasswd&control=DeleteUser&id=<& x_zvps_htpasswd_file_id &>&userid=<& x_zvps_htpasswd_user_id &>" class="button-loader btn btn-danger btn-small">
+                    Delete
+                </a>
+            </td>
+        </tr>
+        <% endloop %>
+    </table>
+    
     <% endif %>
     
     <% if isCreateProtection %>
@@ -108,13 +137,17 @@
         <@ CSFR_Tag @>
     </form>
     <% endif %>
-    
-    <% if isEditUser %>
-        Edit User page
-    <% endif %>
-    
+
     <% if isCreateUser %>
-        Create User page
+    <form action="/?module=zvps_zpanelx_htpasswd&control=CreateUser&action=CreateUser&id=<@ Id @>" method="post" name="CreateProtection">
+        <label>Username:</label>
+        <input type="text" name="username" class="input input-medium">
+        <label>Password:</label>
+        <input type="password" name="password" class="input input-medium">
+        <br><br>
+        <input type="submit" name="submitCreateUser" value="Submit" class="btn btn-primary">
+        <@ CSFR_Tag @>
+    </form>
     <% endif %>
 
     <% if isDeleteUser %>
