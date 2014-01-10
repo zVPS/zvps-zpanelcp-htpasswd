@@ -35,12 +35,24 @@ class module_controller
      * @param int $x_zvps_htpasswd_file_id
      * @return array
      */
-    static function fetchFile( $x_zvps_htpasswd_zpanel_user_id, $x_zvps_htpasswd_file_id )
+    static function fetchFile( $x_zvps_htpasswd_file_id )
     {
         global $zdbh;
-        $sqlString = "SELECT * FROM x_zvps_htpasswd_file WHERE x_zvps_htpasswd_zpanel_user_id = :x_zvps_htpasswd_zpanel_user_id AND x_zvps_htpasswd_file_id = :x_zvps_htpasswd_file_id";
-        $bindArray = array( ':x_zvps_htpasswd_file_id' => $x_zvps_htpasswd_file_id, ':x_zvps_htpasswd_zpanel_user_id' => $x_zvps_htpasswd_zpanel_user_id );
-        $zdbh->bindQuery( $sqlString, $bindArray );
+        $sqlString = "SELECT * FROM x_zvps_htpasswd_file
+            WHERE x_zvps_htpasswd_zpanel_user_id = :x_zvps_htpasswd_zpanel_user_id
+            AND x_zvps_htpasswd_file_id = :x_zvps_htpasswd_file_id
+            AND x_zvps_htpasswd_file_deleted IS NULL";
+        $bindArray = array( 
+            ':x_zvps_htpasswd_file_id' => $x_zvps_htpasswd_file_id, 
+            ':x_zvps_htpasswd_zpanel_user_id' => self::getCurrentUserId(),
+            );
+        try {
+            $zdbh->bindQuery( $sqlString, $bindArray );
+        }
+        catch (PDOException $exc) {
+            self::setFlashMessage('error', 'this protected directory record could not be found to edit.');
+            return false;
+        }
         return $zdbh->returnRow();
     }
 
@@ -50,11 +62,13 @@ class module_controller
      * @param int $x_zvps_htpasswd_zpanel_user_id
      * @return array
      */
-    static function fetchFileList( $x_zvps_htpasswd_zpanel_user_id )
+    static function fetchFileList()
     {
         global $zdbh;
-        $sqlString = "SELECT * FROM x_zvps_htpasswd_file WHERE x_zvps_htpasswd_zpanel_user_id = :x_zvps_htpasswd_zpanel_user_id";
-        $bindArray = array( ':x_zvps_htpasswd_zpanel_user_id' => $x_zvps_htpasswd_zpanel_user_id );
+        $sqlString = "SELECT * FROM x_zvps_htpasswd_file
+            WHERE x_zvps_htpasswd_zpanel_user_id = :x_zvps_htpasswd_zpanel_user_id
+            AND x_zvps_htpasswd_file_deleted IS NULL";
+        $bindArray = array( ':x_zvps_htpasswd_zpanel_user_id' => self::getCurrentUserId() );
         $zdbh->bindQuery( $sqlString, $bindArray );
         return $zdbh->returnRows();
     }
@@ -68,8 +82,14 @@ class module_controller
     static function fetchUser( $x_zvps_htpasswd_user_id )
     {
         global $zdbh;
-        $sqlString = "SELECT * FROM x_zvps_htpasswd_user WHERE x_zvps_htpasswd_user_id = :x_zvps_htpasswd_user_id";
-        $bindArray = array( 'x_zvps_htpasswd_user_id' => $x_zvps_htpasswd_user_id );
+        $sqlString = "SELECT * FROM x_zvps_htpasswd_user
+            WHERE x_zvps_htpasswd_user_id = :x_zvps_htpasswd_user_id
+            AND x_zvps_htpasswd_zpanel_user_id = :x_zvps_htpasswd_zpanel_user_id
+            AND x_zvps_htpasswd_user_deleted";
+        $bindArray = array( 
+            ':x_zvps_htpasswd_user_id' => $x_zvps_htpasswd_user_id,
+            ':x_zvps_htpasswd_zpanel_user_id' => self::getCurrentUserId()
+            );
         $zdbh->bindQuery( $sqlString, $bindArray );
         return $zdbh->returnRow();
     }
@@ -79,11 +99,22 @@ class module_controller
      * @global db_driver $zdbh
      * @return array
      */
-    static function fetchUserList()
+    static function fetchUserList($x_zvps_htpasswd_file_id)
     {
         global $zdbh;
-        $sqlString = "SELECT * FROM x_zvps_htpasswd_user";
-        $zdbh->bindQuery( $sqlString, array( ) );
+        $sqlString = "SELECT * FROM zpanel_core.x_zvps_htpasswd_file 
+                     LEFT OUTER JOIN x_zvps_htpasswd_mapper
+                     ON x_zvps_htpasswd_file.x_zvps_htpasswd_file_id = x_zvps_htpasswd_mapper.x_zvps_htpasswd_file_id
+                     LEFT OUTER JOIN x_zvps_htpasswd_user
+                     ON x_zvps_htpasswd_user.x_zvps_htpasswd_user_id = x_zvps_htpasswd_mapper.x_zvps_htpasswd_user_id
+                     WHERE x_zvps_htpasswd_file.x_zvps_htpasswd_file_id = :x_zvps_htpasswd_file_id
+                     AND (x_zvps_htpasswd_user.x_zvps_htpasswd_zpanel_user_id = :x_zvps_htpasswd_zpanel_user_id
+                          OR x_zvps_htpasswd_user.x_zvps_htpasswd_zpanel_user_id IS NULL);";
+        $bindArray = array( 
+            ':x_zvps_htpasswd_file_id' => $x_zvps_htpasswd_file_id, 
+            ':x_zvps_htpasswd_zpanel_user_id' => self::getCurrentUserId(),     
+        );
+        $zdbh->bindQuery( $sqlString, $bindArray );
         return $zdbh->returnRows();
     }
 
@@ -92,7 +123,7 @@ class module_controller
      * @global db_driver $zdbh
      * @param type $x_zvps_htpasswd_file_id
      */
-    static function fetchFileUserList( $x_zvps_htpasswd_file_id, $x_zvps_htpasswd_zpanel_user_id )
+    static function fetchFileUserList( $x_zvps_htpasswd_file_id )
     {
         global $zdbh;
         $sqlString = "
@@ -104,7 +135,7 @@ class module_controller
         ";
         $bindArray = array(
             ':x_zvps_htpasswd_file_id' => $x_zvps_htpasswd_file_id,
-            ':x_zvps_htpasswd_zpanel_user_id' => $x_zvps_htpasswd_zpanel_user_id,
+            ':x_zvps_htpasswd_zpanel_user_id' => self::getCurrentUserId(),
         );
         $zdbh->bindQuery($sqlString, $bindArray);
         return $zdbh->returnRows();
@@ -143,7 +174,7 @@ class module_controller
             ':x_zvps_htpasswd_file_target'    => $fileArray[ 'x_zvps_htpasswd_file_target' ],
             ':x_zvps_htpasswd_file_message'   => $fileArray[ 'x_zvps_htpasswd_file_message' ],
             ':x_zvps_htpasswd_file_created'   => $fileArray[ 'x_zvps_htpasswd_file_created' ],
-            ':x_zvps_htpasswd_zpanel_user_id' => $fileArray[ 'x_zvps_htpasswd_zpanel_user_id' ],
+            ':x_zvps_htpasswd_zpanel_user_id' => self::getCurrentUserId(),
         );
         try {
             $zdbh->bindQuery( $sqlString, $bindArray );
@@ -171,19 +202,22 @@ class module_controller
             (
                 x_zvps_htpasswd_user_username,
                 x_zvps_htpasswd_user_password,
-                x_zvps_htpasswd_user_created
+                x_zvps_htpasswd_user_created,
+                x_zvps_htpasswd_zpanel_user_id
             )
             VALUES
             (
                 :x_zvps_htpasswd_user_username,
                 :x_zvps_htpasswd_user_password,
-                :x_zvps_htpasswd_user_created
+                :x_zvps_htpasswd_user_created,
+                :x_zvps_htpasswd_zpanel_user_id
             )
         ";
         $bindArray = array(
             ':x_zvps_htpasswd_user_username' => $userArray[ 'x_zvps_htpasswd_user_username' ],
             ':x_zvps_htpasswd_user_password' => $userArray[ 'x_zvps_htpasswd_user_password' ],
-            ':x_zvps_htpasswd_user_created'  => $userArray[ 'x_zvps_htpasswd_user_created' ]
+            ':x_zvps_htpasswd_user_created'  => $userArray[ 'x_zvps_htpasswd_user_created' ],
+            ':x_zvps_htpasswd_zpanel_user_id'  => self::getCurrentUserId(),
         );
         $zdbh->bindQuery( $sqlString, $bindArray );
         return $zdbh->lastInsertId();
@@ -237,11 +271,13 @@ class module_controller
             x_zvps_htpasswd_file_target = :x_zvps_htpasswd_file_target,
             x_zvps_htpasswd_file_message = :x_zvps_htpasswd_file_message
             WHERE x_zvps_htpasswd_file_id = :x_zvps_htpasswd_file_id
+            AND x_zvps_htpasswd_zpanel_user_id = :x_zvps_htpasswd_zpanel_user_id
         ";
         $bindArray = array(
             ':x_zvps_htpasswd_file_id'      => $fileArray[ 'x_zvps_htpasswd_file_id' ],
             ':x_zvps_htpasswd_file_target'  => $fileArray[ 'x_zvps_htpasswd_file_target' ],
             ':x_zvps_htpasswd_file_message' => $fileArray[ 'x_zvps_htpasswd_file_message' ],
+            ':x_zvps_htpasswd_zpanel_user_id' => self::getCurrentUserId(),
         );
         $zdbh->bindQuery( $sqlString, $bindArray );
         return $zdbh->returnResult();
@@ -256,11 +292,13 @@ class module_controller
             x_zvps_htpasswd_user_password = :x_zvps_htpasswd_user_password
             WHERE
             x_zvps_htpasswd_user_id = :x_zvps_htpasswd_user_id
+            x_zvps_htpasswd_zpanel_user_id = :x_zvps_htpasswd_zpanel_user_id
         ";
         $bindArray = array(
             ':x_zvps_htpasswd_user_id'       => $userArray[ 'x_zvps_htpasswd_user_id' ],
             ':x_zvps_htpasswd_user_username' => $userArray[ 'x_zvps_htpasswd_user_username' ],
             ':x_zvps_htpasswd_user_password' => $userArray[ 'x_zvps_htpasswd_user_password' ],
+            ':x_zvps_htpasswd_zpanel_user_id' => self::getCurrentUserId(),
         );
         $zdbh->bindQuery( $sqlString, $bindArray );
         return $zdbh->returnResult();
@@ -278,11 +316,14 @@ class module_controller
     {
         global $zdbh;
         $sqlString = "
-            UPDATE x_zvps_htpasswd_file SET
-            x_zvps_htpasswd_file_deleted = UNIX_TIMESTAMP()
+            DELETE FROM x_zvps_htpasswd_file 
             WHERE x_zvps_htpasswd_file_id = :x_zvps_htpasswd_file_id
+            AND x_zvps_htpasswd_zpanel_user_id = :x_zvps_htpasswd_zpanel_user_id
         ";
-        $bindArray = array( ':x_zvps_htpasswd_file_id' => $x_zvps_htpasswd_file_id );
+        $bindArray = array( 
+            ':x_zvps_htpasswd_file_id' => $x_zvps_htpasswd_file_id,
+            ':x_zvps_htpasswd_zpanel_user_id' => self::getCurrentUserId(),
+        );
         $zdbh->bindQuery( $sqlString, $bindArray );
         return $zdbh->returnResult();
     }
@@ -297,11 +338,14 @@ class module_controller
     {
         global $zdbh;
         $sqlString = "
-            UPDATE x_zvps_htpasswd_user SET
-            x_zvps_htpasswd_user_deleted = :x_zvps_htpasswd_user_deleted
+            DELETE FROM x_zvps_htpasswd_user 
             WHERE x_zvps_htpasswd_user_id = :x_zvps_htpasswd_user_id
+            AND x_zvps_htpasswd_zpanel_user_id = :x_zvps_htpasswd_zpanel_user_id
         ";
-        $bindArray = array( ':x_zvps_htpasswd_user_id' => $x_zvps_htpasswd_user_id );
+        $bindArray = array( 
+            ':x_zvps_htpasswd_user_id' => $x_zvps_htpasswd_user_id,
+            ':x_zvps_htpasswd_zpanel_user_id' => self::getCurrentUserId(),
+        );
         $zdbh->bindQuery( $sqlString, $bindArray );
         return $zdbh->returnResult();
     }
@@ -317,7 +361,8 @@ class module_controller
     {
         global $zdbh;
         $sqlString = "
-            DELETE FROM x_zvps_htpasswd_mapper WHERE
+            DELETE FROM x_zvps_htpasswd_mapper 
+            WHERE
             x_zvps_htpasswd_file_id = :x_zvps_htpasswd_file_id
             AND
             x_zvps_htpasswd_user_id = :x_zvps_htpasswd_user_id
@@ -338,12 +383,14 @@ class module_controller
         $path = self::getHostDir() . self::getCurrentUsername() . '/public_html/' . $file . '/';
         $realPath = realpath($path);
         
-        if(!$realPath) {
+        if(!$realPath)
+        {
             self::setFlashMessage('error', 'Path \'' . $path . '\' not found.');
             return false;
         }
         
-        if( 0 !== strpos($realPath, self::getHostDir() . self::getCurrentUsername() . '/')) {
+        if( 0 !== strpos($realPath, self::getHostDir() . self::getCurrentUsername() . '/'))
+        {
             self::setFlashMessage('error', 'Path \'' . $realPath . '\' is outside your home directory and is not allowed.');
             return false;
         }
@@ -352,17 +399,153 @@ class module_controller
         return $realPath;
     }
     
+    static function fileExists($combinedPath)
+    {
+        if(!fs_director::CheckFileExists($combinedPath)) {
+            self::setFlashMessage('debug', 'file does not exist');
+            return false;
+        }
+        self::setFlashMessage('debug', 'file exists');
+        return true;
+    }
+    
     static function fileHtaccessExists($realPath)
     {
-        if(!file_exists($realPath . '.htaccess')) {
-            self::setFlashMessage('debug', 'htaccess file does not exists');
+        if(!self::fileExists($realPath . '/.htaccess'))
+        {
+            self::setFlashMessage('debug', 'htaccess file does not exists: ' . $realPath . '/.htaccess');
             return false;
         }
         self::setFlashMessage('debug', 'htaccess file exists');
         return true;
     }
     
-    static function createHtaccessFile() {
+    static function fileHtpasswdExists($combinedPath)
+    {
+        if(!self::fileExists($combinedPath))
+        {
+            self::setFlashMessage('debug', 'htpasswd file does not exists: ' . $combinedPath);
+            return false;
+        }
+        self::setFlashMessage('debug', 'htpasswd file exists');
+        return true;
+    }
+    
+    static function writeFile($fileCombinedPath, $string='', $append=false )
+    {
+        $openType = (!$append) ? 'w' : 'a';
+        
+        $fp = fopen($fileCombinedPath, $openType);
+
+        if(false === $fp) {
+            self::setFlashMessage('debug', 'file pointer returned false on fopen');
+            return false;
+        }
+
+        if(false === fwrite($fp, $string)) {
+            self::setFlashMessage('debug', 'file pointer returned false on fwrite');
+            return false;
+        }
+
+        if (false === fclose($fp)) {
+           self::setFlashMessage('debug', 'file pointer returned false on fclose');
+            return false; 
+        }
+
+        self::setFlashMessage('debug', 'file created successfully');
+        return true;
+    }
+    
+    static function createHtaccessFile($realPath) {
+        
+        if(!self::writeFile($realPath . '/.htaccess') )
+        {
+            self::setFlashMessage('error', 'failed to create htaccess file.');
+            return false;
+        }
+        return true;
+    }
+    
+    static function createPasswdFile($realPath)
+    {
+        
+        $path = self::getHostDir() . self::getCurrentUsername() . '/htpasswd/';
+
+        if(!file_exists($path))
+        {
+            self::setFlashMessage('debug', 'passwd folder doesn\'t exist');
+            
+            if(!mkdir($path, 0777, true))
+            {
+                self::setFlashMessage('error', 'passwd folder failed creation');
+                return false;
+            }
+        }
+        
+        if(!self::writeFile($path . 'htpasswd-' . md5($realPath)))
+        {
+            self::setFlashMessage('error', 'failed to create passwd file for protected directory.');
+            return false;
+        }
+        
+        return true;
+    }
+    
+    static function writeHtaccessLink($realPath, $append=false, $message)
+    {
+        $htpasswdFile = self::getHostDir() . self::getCurrentUsername() . '/htpasswd/' . 'htpasswd-' . md5($realPath);
+        $htaccessString = 'AuthName "' . $message . '" ' . PHP_EOL .
+                          'AuthType Basic ' . PHP_EOL .
+                          'AuthUserFile ' . $htpasswdFile . PHP_EOL .
+                          'Require valid-user' . PHP_EOL;
+        
+        if(!self::writeFile($realPath . '/.htaccess', $htaccessString, $append ) )
+        {
+            self::setFlashMessage('error', 'failed to write htaccess file data.');
+            return false;
+        }
+        
+        self::setFlashMessage('debug', 'linked htaccess and passwd successfully.');
+        return true;
+    }
+    
+    static function removeHtaccessLink($realPath, $message)
+    {
+        $data = file($realPath . '/.htaccess');
+        $dataString = implode('', $data);
+        $htpasswdFile = self::getHostDir() . 'htpasswd/' . 'htpasswd-' . md5($realPath);
+        
+        $htaccessString = 'AuthName "' . $message . '" ' . PHP_EOL .
+                          'AuthType Basic ' . PHP_EOL .
+                          'AuthUserFile ' . $htpasswdFile . PHP_EOL .
+                          'Require valid-user' . PHP_EOL;
+        
+        $newFileString = str_replace($htaccessString, '', $dataString);
+        
+        if(!self::writeFile($realPath . '/.htaccess', $newFileString))
+        {
+            self::setFlashMessage('error', 'failed to remove htaccess link to htpasswd file.');
+            return false;
+        }
+        
+        self::setFlashMessage('debug', 'htaccess link to htpasswd removed successfully.');
+
+    }
+    
+    static function removeHtpasswd($combinedPath)
+    {
+        if(!unlink($combinedPath))
+        {
+            self::setFlashMessage('debug', 'htpasswd file removal failed.');
+            return false;
+        }
+        
+        self::setFlashMessage('debug', 'htpasswd file removal succeeded.');
+        return true;
+        
+    }
+    
+    static function writePasswdUsers() {
         
     }
 
@@ -376,12 +559,12 @@ class module_controller
     #########################################################
     static function getFileList()
     {
-        return self::fetchFileList( self::getCurrentUserId() );
+        return self::fetchFileList();
     }
     
     static function getFile()
     {
-        return array(self::fetchFile( self::getCurrentUserId() , (int) self::getId() ));
+        return array(self::fetchFile( self::getId() ));
     }
     
     static function getHostDir()
@@ -392,7 +575,7 @@ class module_controller
     #########################################################
     # Input Checkers
     #########################################################
-    private static function getId()
+    static function getId()
     {
         global $controller;
         $urlvars = $controller->GetAllControllerRequests('URL');
@@ -418,13 +601,25 @@ class module_controller
         
         
         // Check File path security check
-        if(!self::hasFlashErrors()) {
-            $fileTarget = self::fileInPathCheck($file);
-        }
+        if(!self::hasFlashErrors()) { $fileTarget = self::fileInPathCheck($file); }
+        
+        // Check .htaccess exists
+        if(!self::hasFlashErrors()) { $exists = self::fileHtaccessExists($fileTarget); }
+        
+        // Create .htaccess file if needed
+        if(!self::hasFlashErrors() && !$exists) { self::createHtaccessFile($fileTarget); }
+        
+        // Create protected passwd file
+        if(!self::hasFlashErrors()) { self::createPasswdFile($fileTarget); }
+        
+        // Write htaccess configs to link to passwd file
+        $append = !$exists ? false : true;
+        if(!self::hasFlashErrors()) { self::writeHtaccessLink($fileTarget, $append, $message); }
         
         // Create DB record
-        if(!self::hasFlashErrors()) {
-            self::createFile(
+        if(!self::hasFlashErrors())
+        {
+            $id = self::createFile(
                 array(
                     'x_zvps_htpasswd_file_target'    => $fileTarget,
                     'x_zvps_htpasswd_file_message'   => $message,
@@ -432,18 +627,80 @@ class module_controller
                     'x_zvps_htpasswd_zpanel_user_id' => self::getCurrentUserId(),
                 )
             );
+            if(!self::hasFlashErrors()) 
+            {
+                self::setFlashMessage('debug', 'protected directory added to db successfully.');
+            }
         }
         
-        // Create or append to .htaccess
-        if(!self::hasFlashErrors())
-        {
-            
-        }
+        self::setFlashMessage('debug', 'Successfully created protected directory id : ' . $id);
         
         // No errors
+        if(!self::hasFlashErrors()) 
+        {
+            header("location: ./?module=" . $controller->GetCurrentModule() . "&control=EditProtection&id=" . $id);
+        }
+
+    }
+    
+    static function doEditProtection()
+    {
+        global $controller;
+        runtime_csfr::Protect();
         
-        // Errors
+        $message = $controller->GetControllerRequest('FORM', 'message');
+        $id = self::getId();
+        $file = self::fetchFile($id);
         
+        if(!self::hasFlashErrors())
+        {
+            self::updateFile(array(
+                'x_zvps_htpasswd_file_id'      => $id,
+                'x_zvps_htpasswd_file_target'  => $file['x_zvps_htpasswd_file_target'],
+                'x_zvps_htpasswd_file_message' => $message,
+            ));
+        }
+    }
+    
+    static function doDeleteProtection()
+    {
+        global $controller;
+        runtime_csfr::Protect();
+        $id = self::getId();
+        $file = self::fetchFile($id);
+        $htpasswdFile = self::getHostDir() . self::getCurrentUsername() . '/htpasswd/' . 'htpasswd-' . md5($file['x_zvps_htpasswd_file_target']);
+        
+        // delete from htaccess file
+        self::removeHtaccessLink($file['x_zvps_htpasswd_file_target'],$file['x_zvps_htpasswd_file_message']);
+        
+        // delete htaccess passwd file
+        self::removeHtpasswd($htpasswdFile);
+        
+        // delete all users and mappings from db related to protected directory
+        $files = self::fetchUserList($id);
+        
+        if($files && !self::hasFlashErrors()) {
+            foreach ($files as $file) {
+                if($file['x_zvps_htpasswd_file_id']) { 
+                    self::deleteUser($file['x_zvps_htpasswd_file_id']);
+                    self::setFlashMessage('debug', 'deleting user');
+                }
+                if($file['x_zvps_htpasswd_file_id'] && $file['x_zvps_htpasswd_user_id']) {
+                    self::deleteMapper($file['x_zvps_htpasswd_file_id'], $file['x_zvps_htpasswd_user_id']);
+                    self::setFlashMessage('debug', 'deleting file user mapper');
+                }
+            }
+
+            // delete protected from db
+            self::deleteFile($id);
+            self::setFlashMessage('debug', 'deleting file');
+        }
+        
+        // return to list
+        if(!self::hasFlashErrors()) 
+        {
+            header("location: ./?module=" . $controller->GetCurrentModule() . "&control=Index");
+        }
     }
     
     
@@ -615,7 +872,7 @@ class module_controller
             return array_key_exists('error', $message);
         }
         
-        return true;
+        return false;
     }
 
 }
