@@ -642,6 +642,19 @@ class module_controller
         return false;
     }
     
+    static function getUserId()
+    {
+        global $controller;
+        $urlvars = $controller->GetAllControllerRequests('URL');
+        if ( 
+            (isset($urlvars['control'])) && 
+            (isset($urlvars['userid'])) 
+        ) {
+            return (int) $urlvars['userid'];
+        }
+        return false;
+    }
+    
     #########################################################
     # Post Actions
     #########################################################
@@ -795,6 +808,37 @@ class module_controller
     
     static function doDeleteUser()
     {
+        global $controller;
+        runtime_csfr::Protect();
+        
+        $id = self::getId();
+        $userId = self::getUserId();
+        $file = self::fetchFile($id);
+        
+        if(!self::hasFlashErrors()) 
+        {
+        self::deleteUser($userId);
+        }
+        
+        if(!self::hasFlashErrors()) 
+        {
+        self::deleteMapper($id, $userId);
+        }
+        
+        if(!self::hasFlashErrors()) 
+        {
+        self::deleteFile($id);
+        }
+        
+        if(!self::hasFlashErrors()) 
+        {
+            self::writePasswdUsers($file);
+        }
+        
+        if(!self::hasFlashErrors()) 
+        {
+            header("location: ./?module=" . $controller->GetCurrentModule() . "&control=EditProtection&id=" . $id);
+        }
         
     }
 
