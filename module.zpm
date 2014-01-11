@@ -158,7 +158,7 @@
 
     <% if isDeleteUser %>
         <div>Please confirm the user delete request:</div>
-        <form action="/?module=zvps_zpanelx_htpasswd&control=DeleteUser&action=DeleteUser&id=<@ Id @>" method="post" name="DeleteUser">
+        <form action="/?module=zvps_zpanelx_htpasswd&control=DeleteUser&action=DeleteUser&id=<@ Id @>&userid=<@ UserId @>" method="post" name="DeleteUser">
             <input type="submit" name="submitDeleteUser" value="Submit" class="btn btn-primary">
             <@ CSFR_Tag @>
         </form>

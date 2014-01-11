@@ -827,17 +827,12 @@ class module_controller
         
         if(!self::hasFlashErrors()) 
         {
-        self::deleteFile($id);
-        }
-        
-        if(!self::hasFlashErrors()) 
-        {
             self::writePasswdUsers($file);
         }
         
         if(!self::hasFlashErrors()) 
         {
-            header("location: ./?module=" . $controller->GetCurrentModule() . "&control=EditProtection&id=" . $id);
+            //header("location: ./?module=" . $controller->GetCurrentModule() . "&control=EditProtection&id=" . $id);
         }
         
     }
