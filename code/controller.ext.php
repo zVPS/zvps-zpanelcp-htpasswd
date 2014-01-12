@@ -49,11 +49,13 @@ class module_controller
         try {
             $zdbh->bindQuery( $sqlString, $bindArray );
         }
-        catch (PDOException $exc) {
+        catch (PDOException $e) {
             self::setFlashMessage('error', 'this protected directory record could not be found to edit.');
             return false;
         }
-        return $zdbh->returnRow();
+        $row = $zdbh->returnRow();
+        $row['x_zvps_htpasswd_file_created'] = date('Y-m-d H:i:s', $row['x_zvps_htpasswd_file_created']);
+        return $row;
     }
 
     /**
@@ -70,7 +72,12 @@ class module_controller
             AND x_zvps_htpasswd_file_deleted IS NULL";
         $bindArray = array( ':x_zvps_htpasswd_zpanel_user_id' => self::getCurrentUserId() );
         $zdbh->bindQuery( $sqlString, $bindArray );
-        return $zdbh->returnRows();
+        $rows = $zdbh->returnRows();
+        /** format created */
+        foreach($rows as &$row) {
+            $row['x_zvps_htpasswd_file_created'] = date('Y-m-d H:i:s', $row['x_zvps_htpasswd_file_created']);
+        }
+        return $rows;
     }
 
     /**
@@ -79,18 +86,19 @@ class module_controller
      * @param int $x_zvps_htpasswd_user_id
      * @return array
      */
-    static function fetchUser( $x_zvps_htpasswd_user_id )
+    static function fetchUser()
     {
         global $zdbh;
         $sqlString = "SELECT * FROM x_zvps_htpasswd_user
             WHERE x_zvps_htpasswd_user_id = :x_zvps_htpasswd_user_id
             AND x_zvps_htpasswd_zpanel_user_id = :x_zvps_htpasswd_zpanel_user_id
-            AND x_zvps_htpasswd_user_deleted";
+            AND x_zvps_htpasswd_user_deleted IS NULL";
         $bindArray = array( 
-            ':x_zvps_htpasswd_user_id' => $x_zvps_htpasswd_user_id,
+            ':x_zvps_htpasswd_user_id' => self::getUserId(),
             ':x_zvps_htpasswd_zpanel_user_id' => self::getCurrentUserId()
             );
         $zdbh->bindQuery( $sqlString, $bindArray );
+        
         return $zdbh->returnRow();
     }
 
@@ -115,7 +123,13 @@ class module_controller
             ':x_zvps_htpasswd_zpanel_user_id' => self::getCurrentUserId(),     
         );
         $zdbh->bindQuery( $sqlString, $bindArray );
-        return $zdbh->returnRows();
+        $rows = $zdbh->returnRows();
+        /** format created */
+        foreach($rows as &$row) {
+            $row['x_zvps_htpasswd_file_created'] = date('Y-m-d H:i:s', $row['x_zvps_htpasswd_file_created']);
+            $row['x_zvps_htpasswd_user_created'] = date('Y-m-d H:i:s', $row['x_zvps_htpasswd_user_created']);
+        }
+        return $rows;
     }
 
     /**
@@ -123,7 +137,7 @@ class module_controller
      * @global db_driver $zdbh
      * @param type $x_zvps_htpasswd_file_id
      */
-    static function fetchFileUserList( $x_zvps_htpasswd_file_id )
+    static function fetchFileUserList()
     {
         global $zdbh;
         $sqlString = "
@@ -138,7 +152,13 @@ class module_controller
             ':x_zvps_htpasswd_zpanel_user_id' => self::getCurrentUserId(),
         );
         $zdbh->bindQuery($sqlString, $bindArray);
-        return $zdbh->returnRows();
+        $rows = $zdbh->returnRows();
+        /** format created */
+        foreach($rows as &$row) {
+            $row['x_zvps_htpasswd_file_created'] = date('Y-m-d H:i:s', $row['x_zvps_htpasswd_file_created']);
+            $row['x_zvps_htpasswd_user_created'] = date('Y-m-d H:i:s', $row['x_zvps_htpasswd_user_created']);
+        }
+        return $rows;
     }
 
     #########################################################
@@ -292,7 +312,7 @@ class module_controller
             x_zvps_htpasswd_zpanel_user_id = :x_zvps_htpasswd_zpanel_user_id
         ";
         $bindArray = array(
-            ':x_zvps_htpasswd_user_id'       => $userArray[ 'x_zvps_htpasswd_user_id' ],
+            ':x_zvps_htpasswd_user_id'       => self::getUserId(),
             ':x_zvps_htpasswd_user_username' => $userArray[ 'x_zvps_htpasswd_user_username' ],
             ':x_zvps_htpasswd_user_password' => $userArray[ 'x_zvps_htpasswd_user_password' ],
             ':x_zvps_htpasswd_zpanel_user_id' => self::getCurrentUserId(),
@@ -626,6 +646,11 @@ class module_controller
         return self::fetchFileUserList();
     }
     
+    static function getUser()
+    {
+        return array(self::fetchUser());
+    }
+    
     #########################################################
     # Input Checkers
     #########################################################
@@ -699,9 +724,7 @@ class module_controller
                 self::setFlashMessage('debug', 'protected directory added to db successfully.');
             }
         }
-        
-        self::setFlashMessage('debug', 'Successfully created protected directory id : ' . $id);
-        
+
         // No errors
         if(!self::hasFlashErrors()) 
         {
@@ -786,8 +809,7 @@ class module_controller
         runtime_csfr::Protect();
         $id = self::getId();
         $file = self::fetchFile($id);
-        $htpasswdFile = self::getHostDir() . self::getCurrentUsername() . '/htpasswd/' . 'htpasswd-' . md5($file['x_zvps_htpasswd_file_target']);
-        
+
         $username = $controller->GetControllerRequest('FORM', 'username');
         $password = $controller->GetControllerRequest('FORM', 'password');
         
@@ -799,6 +821,29 @@ class module_controller
         ));
         
         self::createMapper($id, $userId);
+        
+        self::writePasswdUsers($file);
+        
+        header("location: ./?module=" . $controller->GetCurrentModule() . "&control=EditProtection&id=" . $id);
+        
+    }
+    
+        static function doUpdateUser()
+    {
+        global $controller;
+        runtime_csfr::Protect();
+        $id = self::getId();
+        $file = self::fetchFile($id);
+
+        $username = $controller->GetControllerRequest('FORM', 'username');
+        $password = $controller->GetControllerRequest('FORM', 'password');
+        
+        $encryptedPassword = crypt($password, base64_encode($password));
+        
+        self::updateUser(array(
+            'x_zvps_htpasswd_user_username'  => $username,
+            'x_zvps_htpasswd_user_password'  => $encryptedPassword,
+        ));
         
         self::writePasswdUsers($file);
         
@@ -832,7 +877,7 @@ class module_controller
         
         if(!self::hasFlashErrors()) 
         {
-            //header("location: ./?module=" . $controller->GetCurrentModule() . "&control=EditProtection&id=" . $id);
+            header("location: ./?module=" . $controller->GetCurrentModule() . "&control=EditProtection&id=" . $id);
         }
         
     }
