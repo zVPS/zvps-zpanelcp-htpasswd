@@ -15,7 +15,7 @@ class module_controller
      * Dev mode enables debug messages in the view.
      * @var boolean 
      */
-    static $mode = true;
+    static $mode = false;
     
     
     #########################################################
