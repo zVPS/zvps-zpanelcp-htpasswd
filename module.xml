@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <module>
 	<name>zVPS HTPasswd</name>
-	<version>1.0.0</version>
+	<version>100</version>
 	<defaultcat>Advanced</defaultcat>
 	<desc>Password protect your applications and directories.</desc>
 	<authorname>nForced Website Hosting Limited</authorname>
