@@ -26,7 +26,7 @@ class module_controller
     static $flash_messanger = array();
 
     #########################################################
-    # Htpasswd DAO (Data Access Object)                     #
+    # Htpasswd DAO (Data Access Object) Functions           #
     #########################################################
 
     /**
@@ -393,7 +393,7 @@ class module_controller
     }
 
     #########################################################
-    # File System Operations
+    # File System Operations                                #
     #########################################################
     static function fileInPathCheck($file)
     {
@@ -618,11 +618,6 @@ class module_controller
         );
     }
 
-    #########################################################
-    # Htpasswd Password Generation
-    #########################################################
-    
-    
     #########################################################
     # Service Output methods
     #########################################################
