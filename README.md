@@ -1,9 +1,9 @@
-## Replacement htpasswd module for ZPanelCP 10.1.0
+## Replacement htpasswd module for ZPanelCP 10.1.1 and 10.1.0
 
 ### Installation notes
 
 1. Download the module file.
-2. Login as zadmin to ZPanel 10.1.1.
+2. Login as zadmin to ZPanel 10.1.0 or 10.1.1.
 3. Navigate to Module Admin.
 4. Scroll to the bottom of Module Admin.
 5. Click the upload module button.
