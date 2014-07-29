@@ -3,7 +3,7 @@
 ### Installation notes
 
 1. Download the module file.
-2. Login as zadmin to ZPanel 10.1.0.
+2. Login as zadmin to ZPanel 10.1.1.
 3. Navigate to Module Admin.
 4. Scroll to the bottom of Module Admin.
 5. Click the upload module button.
