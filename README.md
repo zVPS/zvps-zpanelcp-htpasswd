@@ -1,3 +1,5 @@
+# This module has now been included in Sentora 1.0 Core.
+
 ## Replacement htpasswd module for ZPanelCP 10.1.1 and 10.1.0
 
 ### Installation notes
